@@ -1,3 +1,23 @@
+
+Environment
+  Site1
+    ALEADER01
+    ALEADER02
+    ALEADER03
+    AFOLLOW01
+    ALEADER02
+  Site2
+    BLEADER01
+    BLEADER02
+    BLEADER03
+    BFOLLOW01
+    BLEADER02
+
+conjurls.domain.local - Leader/Standby VIP
+conjur.domain.local - Follower VIP
+
+
+
 ### 1 - Deploy Container
 
 sudo su -
@@ -42,3 +62,128 @@ registry.tld/conjur-appliance:13.0.0.1
 
 # Check containter is running
 docker ps -a
+
+### SECTION 1: END
+
+### SECTION 2: Import Certificates on Active Leader (ALEADER01 is the active leader in our example)
+
+# Create PEM Files of conjur.domain.local and conjurls.domain.local (CRT, KEY, CHAIN) and place in NFS such as /path/to/cert/files/ central location
+
+# (OS CONSOLE ALEADER01)
+cp /path/to/cert/files/(*.pem|*.key) /opt/cyberark/conjur/backup
+openssl rsa -in /opt/cyberark/conjur/backup/conjurls.domain.local.key -out /opt/cyberark/conjur/backup/conjurls.domain.local.key
+openssl rsa -in /opt/cyberark/conjur/backup/conjur.domain.local.key -out /opt/cyberark/conjur/backup/conjur.domain.local.key
+
+docker exec -it conjur evoke ca import --force --root /opt/conjur/backup/conjurls.domain.local-chain.pem
+
+docker exec conjur evoke configure master \
+--accept-eula
+--hostname conjurls.domain.local \
+--master-altnames ALEADER01.domain.local,ALEADER02.domain.local,ALEADER03.domain.local \
+--admin-password ******** \
+default
+
+docker exec -it conjur evoke ca import --force --key /opt/conjur/backup/conjurls.domain.local.key --set /opt/conjur/backup/conjurls.domain.local.pem
+docker exec -it conjur evoke ca import --force --key /opt/conjur/backup/conjur.domain.local.key /opt/conjur/backup/conjur.domain.local.pem
+
+### SECTION 2: END
+
+### SECTION 3: Initial Deployment of Leader (ALEADER01 is the active leader in our example)
+
+# (OS CONSOLE ALEADER01)
+docker exec -it conjur bash
+# (Container CONSOLE ALEADER01)
+mkdir /opt/dbkey
+cd /opt/dbkey
+openssl rand 32 > /opt/dbkey/master.key
+evoke keys encrypt /opt/dbkey/master.key
+evoke keys unlock /opt/dbkey/master.key
+
+### SECTION 3: END
+
+### SECTION 4: Create Seed Files on Active Leader (ALEADER01 is the active leader in our example)
+
+# (OS CONSOLE ALEADER01)
+docker exec -it conjur bash
+# (Container CONSOLE ALEADER01)
+cd /opt/dbkey
+evoke seed standby ALEADER02.domain.local conjurls.domain.local > ALEADER02.domain.local.seed
+evoke seed standby ALEADER03.domain.local conjurls.domain.local > ALEADER03.domain.local.seed
+evoke seed standby BLEADER01.domain.local conjurls.domain.local > BLEADER01.domain.local.seed
+evoke seed standby BLEADER02.domain.local conjurls.domain.local > BLEADER02.domain.local.seed
+evoke seed standby BLEADER03.domain.local conjurls.domain.local > BLEADER03.domain.local.seed
+evoke seed follower conjur.domain.local conjurls.domain.local > follower.seed
+cp {*.seed,*.master,*.key} /opt/conjur/backup
+#(OS CONSOLE ALEADER01)
+scp /opt/cyberark/conjur/backup/{ALEADER02.domain.local.seed,master.key} user@ALEADER02:/tmp
+scp /opt/cyberark/conjur/backup/{ALEADER03.domain.local.seed,master.key} user@ALEADER03:/tmp
+scp /opt/cyberark/conjur/backup/{BLEADER01.domain.local.seed,master.key} user@BLEADER01:/tmp
+scp /opt/cyberark/conjur/backup/{BLEADER02.domain.local.seed,master.key} user@BLEADER02:/tmp
+scp /opt/cyberark/conjur/backup/{BLEADER03.domain.local.seed,master.key} user@BLEADER03:/tmp
+scp /opt/cyberark/conjur/backup/{follower.seed,master.key} user@AFOLLOW01:/tmp
+scp /opt/cyberark/conjur/backup/{follower.seed,master.key} user@AFOLLOW02:/tmp
+scp /opt/cyberark/conjur/backup/{follower.seed,master.key} user@BFOLLOW01:/tmp
+scp /opt/cyberark/conjur/backup/{follower.seed,master.key} user@BFOLLOW02:/tmp
+
+### SECTION 4: END
+
+### SECTION 5: Load Seed Files (each Leader/Standy and Follower)
+
+# (OS CONSOLE)
+docker exec conjur mkdir /opt/dbkey
+docker cp /tmp/master.key conjur:/opt/dbkey
+rm /tmp/master.key
+
+# <fqdn_of_server> = seed filename from section 4
+cat /tmp/<fqdn_of_server>.seed | docker exec -i conjur evoke keys exec -m /opt/dbkey/master.key -- evoke unpack seed -
+
+# IF Standby Run Command
+docker exec -i conjur evoke keys exec -m /opt/dbkey/master.key -- evoke configure standby
+
+# IF Follower Run Command
+docker exec -i conjur evoke keys exec -m /opt/dbkey/master.key -- evoke configure follower
+
+### SECTION 5: END
+
+### SECTION 6: Configure systemd to unlock conjur automatically during boot
+
+
+sudo su -
+
+# (OS CONSOLE)
+
+vi /etc/systemd/system/docker-conjur.service
+
+	[Unit]
+	Description=Start Conjur Service on Container
+	Requires=docker.service
+	After=docker.service
+
+	[Service]
+	User=root
+	Type=forking
+	ExecStart=/usr/bin/docker exec conjur evoke keys unlock /opt/dbkey/master.key
+
+	[Install]
+	WantedBy=multi-user.target
+
+systemctl start docker-conjur
+systemctl stop docker-conjur
+systemctl enable docker-conjur
+/sbin/reboot
+
+curl -vk https:/localhost/health
+
+### SECTION 6: END
+
+### SECTION 7: Health Checks
+
+
+curl -vk https://localhost/health
+
+# Notes:
+# - No traffic should ever goto a Standby - 502 Gateway (health page specific Standby will also show Conjur-Health: UNHEALTHY)
+# - Production traffic (services/user) should be pointed to followers VIP
+# - Followers will report writes to the Leader
+# - 'streaming' should be true indicating replication is active
+# - 'pg_last_xlog_replay_location' can help with identifying if the database log shipping is lagged
