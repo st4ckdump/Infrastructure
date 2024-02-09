@@ -1,0 +1,44 @@
+### 1 - Deploy Container
+
+sudo su -
+cd /opt/cyberark/conjur
+vi seccomp.json
+
+# https://docs.cyberark.com/conjur-enterprise/latest/en/Content/Deployment/platforms/docker-sec-profile.htm -- seccomp.json
+
+docker load -i ./conjur-appliance-Rls-v13.0.tar.gz
+
+# Leader/Stanby  (1999:syslog,5432 postgress)
+
+docker run \
+--name conjur \
+--detach \
+--restart=unless-stopped \
+--security-opt seccomp=/opt/cyberark/conjur/seccomp.json \
+--publish "443:443" \
+--publish "444:444" \
+--publish "5432:5432" \
+--publish "1999:1999" \
+--log-driver journald \
+-v /opt/cyberark/conjur/config:/etc/conjur/config:Z \
+-v /opt/cyberark/conjur/log:/etc/conjur/log:Z \
+-v /opt/cyberark/conjur/backup:/etc/conjur/backup:Z \
+registry.tld/conjur-appliance:13.0.0.1
+
+
+# Follower
+docker run \
+--name conjur \
+--detach \
+--restart=unless-stopped \
+--security-opt seccomp=/opt/cyberark/conjur/seccomp.json \
+--publish "443:443" \
+--publish "444:444" \
+--log-driver journald \
+-v /opt/cyberark/conjur/config:/etc/conjur/config:Z \
+-v /opt/cyberark/conjur/log:/etc/conjur/log:Z \
+-v /opt/cyberark/conjur/backup:/etc/conjur/backup:Z \
+registry.tld/conjur-appliance:13.0.0.1
+
+# Check containter is running
+docker ps -a
