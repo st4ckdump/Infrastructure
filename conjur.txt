@@ -5,13 +5,13 @@ Environment
     ALEADER02
     ALEADER03
     AFOLLOW01
-    ALEADER02
+    AFOLLOW02
   Site2
     BLEADER01
     BLEADER02
     BLEADER03
     BFOLLOW01
-    BLEADER02
+    BFOLLOW02
 
 conjurls.domain.local - Leader/Standby VIP
 conjur.domain.local - Follower VIP
