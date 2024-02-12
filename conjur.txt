@@ -70,7 +70,7 @@ docker ps -a
 # Create PEM Files of conjur.domain.local and conjurls.domain.local (CRT, KEY, CHAIN) and place in NFS such as /path/to/cert/files/ central location
 
 # (OS CONSOLE ALEADER01)
-cp /path/to/cert/files/(*.pem|*.key) /opt/cyberark/conjur/backup
+cp /path/to/cert/files/{*.pem|*.key} /opt/cyberark/conjur/backup
 openssl rsa -in /opt/cyberark/conjur/backup/conjurls.domain.local.key -out /opt/cyberark/conjur/backup/conjurls.domain.local.key
 openssl rsa -in /opt/cyberark/conjur/backup/conjur.domain.local.key -out /opt/cyberark/conjur/backup/conjur.domain.local.key
 
