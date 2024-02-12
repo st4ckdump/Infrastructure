@@ -28,6 +28,7 @@ if($null -eq $targetuser -or $null -eq $address){
 # Do some validation on expected format of the target user
 if($targetuser -notmatch "") {
 	Write-Host "Script: Username Format"
+	Exit
 }
 
 # Load Modules
