@@ -12,8 +12,11 @@
 [HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Edge\AutoOpenFileTypes]
 "1"="rdp"
 
-
 ##Chrome
+
+# Warnings
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Google\Chrome]
+"ExemptDomainFileTypePairsFromFileTypeDownloadWarnings"="[{\"file_extension\":\"rdp\",\"domains\":[\"pwmanager.contoso.com\"]}]"
 
 # Auto Open RDP File
 [HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Google\Chrome\AutoOpenFileTypes]
@@ -24,5 +27,4 @@
 # Warnings
 
 [HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Mozilla\Firefox]
-
 ExemptDomainFileTypePairsFromFileTypeDownloadWarnings   -------  REG_MULTI_SZ  ------- [{"domains":["pwmanager.contoso.com"],"file_extension":"rdp"}]
