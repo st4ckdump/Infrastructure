@@ -1,0 +1,28 @@
+#### Registry Keys
+
+## Edge
+
+# Warnings
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Edge]
+"ExemptFileTypeDownloadWarnings"="[{\"file_extension\":\"rdp\",\"domains\":[\"pwmanager.contoso.com\"]}]"
+
+# Auto Open RDP File
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Edge\AutoOpenAllowedForURLs]
+"1"="https://pwmanager.contoso.com"
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Edge\AutoOpenFileTypes]
+"1"="rdp"
+
+
+##Chrome
+
+# Auto Open RDP File
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Google\Chrome\AutoOpenFileTypes]
+"1"="rdp"
+
+##Firefox
+
+# Warnings
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Mozilla\Firefox]
+
+ExemptDomainFileTypePairsFromFileTypeDownloadWarnings   -------  REG_MULTI_SZ  ------- [{"domains":["pwmanager.contoso.com"],"file_extension":"rdp"}]
