@@ -32,3 +32,12 @@ ORDER BY
 
 
 ExportVaultData.exe \VaultFile=Vault.ini \CredFile=user.cred \LogFile=evdloglist.log \Target=MSSQL \DBServerName=UTL01 \timezone=LocalTime \LogList \ContinueOnErrors \LogNumOfDays=8
+
+
+CAATime	CAAAction	CAAUserName	CAARequestReason	UserName	Address	PolicyID
+2024-05-30 09:57:54.000	Retrieve password	Administrator	(Action: Show Password)	junk1.admin	x.local	WIN-X-USR-AUTO
+2024-05-30 09:57:00.000	CPM Change Password	PasswordManager	ImmediateTask	junk1.admin	x.local	WIN-X-USR-AUTO
+2024-05-29 17:30:23.000	Retrieve password	Administrator	(Action: Copy Password)	junk1.admin	x.local	WIN-X-USR-AUTO
+2024-05-29 17:30:19.000	Retrieve password	Administrator	(Action: Show Password)	junk1.admin	x.local	WIN-X-USR-AUTO
+2024-05-29 17:30:06.000	Retrieve password	Administrator	(Action: Show Password)	junk1.admin	x.local	WIN-X-USR-AUTO
+2024-05-29 16:16:23.000	Retrieve password	Administrator	(Action: Show Password)	junk1.admin	x.local	WIN-X-USR-AUTO
