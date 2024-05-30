@@ -1,0 +1,34 @@
+SELECT 
+	a.CAATime,
+	a.CAAAction,
+	a.CAAUserName,
+	a.CAARequestReason,
+	p.UserName,
+	p.Address,
+	p.PolicyID
+FROM
+	[CyberArk].[dbo].[CALog] a
+JOIN
+	(
+		SELECT CAOPSafeID,
+			MAX(CASE WHEN CAOPObjectPropertyName = 'UserName' THEN CAOPObjectPropertyValue END) AS UserName,
+			MAX(CASE WHEN CAOPObjectPropertyName = 'Address' THEN CAOPObjectPropertyValue END) AS Address,
+			MAX(CASE WHEN CAOPObjectPropertyName = 'PolicyID' THEN CAOPObjectPropertyValue END) AS PolicyID
+		FROM
+			[CyberArk].[dbo].[CAObjectProperties]
+		GROUP BY
+			CAOPSafeID
+	) p
+ON
+	a.CAASafeID = p.CAOPSafeID
+WHERE
+	((a.CAAActivityCode = 295 and a.CAAUserTypeID = 10) OR a.CAAActivityCode = 24) and (p.PolicyID like 'WIN-%')
+ORDER BY
+	a.CAATime DESC
+
+
+
+
+
+
+ExportVaultData.exe \VaultFile=Vault.ini \CredFile=user.cred \LogFile=evdloglist.log \Target=MSSQL \DBServerName=UTL01 \timezone=LocalTime \LogList \ContinueOnErrors \LogNumOfDays=8
