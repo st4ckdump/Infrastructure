@@ -28,7 +28,44 @@ ORDER BY
 
 
 
-
+SELECT 
+--    p.CAOPSafeID,
+--    p.CAOPFileId,
+    p.UserName,
+    p.Address,
+    p.PolicyID,
+    p.CPMStatus,
+--    p.LastRecon,
+--    p.LastChange,
+    CASE 
+        WHEN CAST(p.LastRecon AS INT) > CAST(p.LastChange AS INT) THEN DATEADD(s, CAST(p.LastRecon AS INT), '1970-01-01')
+        ELSE DATEADD(s, CAST(p.LastChange AS INT), '1970-01-01')
+    END AS LastUpdate,
+    CASE 
+        WHEN cpm.CAOPObjectPropertyName IS NOT NULL THEN 'TRUE'
+        ELSE 'FALSE'
+    END AS CPMDisabled
+FROM (
+    SELECT
+        CAOPSafeID,
+        CAOPFileId,
+        MAX(CASE WHEN CAOPObjectPropertyName = 'UserName' THEN CAOPObjectPropertyValue END) AS UserName,
+        MAX(CASE WHEN CAOPObjectPropertyName = 'Address' THEN CAOPObjectPropertyValue END) AS Address,
+        MAX(CASE WHEN CAOPObjectPropertyName = 'PolicyID' THEN CAOPObjectPropertyValue END) AS PolicyID,
+        MAX(CASE WHEN CAOPObjectPropertyName = 'CPMStatus' THEN CAOPObjectPropertyValue END) AS CPMStatus,
+        MAX(CASE WHEN CAOPObjectPropertyName = 'LastSuccessReconciliation' THEN CAOPObjectPropertyValue END) AS LastRecon,
+        MAX(CASE WHEN CAOPObjectPropertyName = 'LastSuccessChange' THEN CAOPObjectPropertyValue END) AS LastChange
+    FROM
+        [CyberArk].[dbo].[CAObjectProperties]
+    GROUP BY
+        CAOPSafeID, CAOPFileId
+) p
+OUTER APPLY (
+    SELECT TOP 1 CAOPObjectPropertyName
+    FROM [CyberArk].[dbo].[CAObjectProperties] c
+    WHERE c.CAOPSafeID = p.CAOPSafeID AND c.CAOPFileId = p.CAOPFileId AND c.CAOPObjectPropertyName = 'CPMDisable'
+) cpm
+WHERE p.PolicyID LIKE 'ISR-%';
 
 
 ExportVaultData.exe \VaultFile=Vault.ini \CredFile=user.cred \LogFile=evdloglist.log \Target=MSSQL \DBServerName=UTL01 \timezone=LocalTime \LogList \ContinueOnErrors \LogNumOfDays=8
